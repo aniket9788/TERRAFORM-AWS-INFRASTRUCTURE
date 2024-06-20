@@ -1,0 +1,28 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.8
+      docker: 19
+    commands:
+      - echo "Installing dependencies..."
+      - pip install -r app/requirements.txt
+  build:
+    commands:
+      - echo "Building the Docker image..."
+      - docker build -t your-docker-repo:latest app/
+      - echo "Pushing the Docker image to ECR..."
+      - $(aws ecr get-login-password --region your-region | docker login --username AWS --password-stdin your-aws-account-id.dkr.ecr.your-region.amazonaws.com)
+      - docker tag your-docker-repo:latest your-aws-account-id.dkr.ecr.your-region.amazonaws.com/your-docker-repo:latest
+      - docker push your-aws-account-id.dkr.ecr.your-region.amazonaws.com/your-docker-repo:latest
+  post_build:
+    commands:
+      - echo "Running Terraform..."
+      - cd app/deploy
+      - terraform init
+      - terraform apply -auto-approve
+artifacts:
+  files:
+    - app/deploy/**
+    - terraform/**
